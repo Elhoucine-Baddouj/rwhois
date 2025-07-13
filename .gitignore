@@ -1,0 +1,34 @@
+# Configuration files with sensitive data
+config.php
+php.ini
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# SSH keys (if any)
+*.pem
+*.key
+id_*
+
+# Database files
+*.sql
+*.db
+
+# Test files
+test.php
+test_pdo.php 
