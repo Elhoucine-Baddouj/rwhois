@@ -103,70 +103,58 @@ class UserController extends BaseController
         }
     }
     
+    public function view()
+    {
+        $id = $this->getQueryParam('id');
+        $user = $this->getUser($id);
+        $this->render('users/view', ['user' => $user]);
+    }
+    
     // Méthodes privées pour la gestion des données
     private function getAllUsers()
     {
-        return [
-            [
-                'id' => 1,
-                'username' => 'admin',
-                'email' => 'admin@rwhois.com',
-                'full_name' => 'Administrateur Système',
-                'role' => 'admin',
-                'organization' => 'TechCorp Inc.',
-                'status' => 'active',
-                'created_at' => '2024-01-01'
-            ],
-            [
-                'id' => 2,
-                'username' => 'techcorp_user',
-                'email' => 'user@techcorp.com',
-                'full_name' => 'Utilisateur TechCorp',
-                'role' => 'user',
-                'organization' => 'TechCorp Inc.',
-                'status' => 'active',
-                'created_at' => '2024-01-10'
-            ],
-            [
-                'id' => 3,
-                'username' => 'datanet_admin',
-                'email' => 'admin@datanet.com',
-                'full_name' => 'Admin DataNet',
-                'role' => 'admin',
-                'organization' => 'DataNet Solutions',
-                'status' => 'active',
-                'created_at' => '2024-01-15'
-            ]
-        ];
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT u.*, o.name AS organization FROM users u LEFT JOIN organizations o ON u.organization_id = o.id ORDER BY u.id";
+            $stmt = $pdo->query($sql);
+            return $stmt->fetchAll();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
     
     private function getUser($id)
     {
-        $users = $this->getAllUsers();
-        foreach ($users as $user) {
-            if ($user['id'] == $id) {
-                return $user;
-            }
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT u.*, o.name AS organization FROM users u LEFT JOIN organizations o ON u.organization_id = o.id WHERE u.id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$id]);
+            return $stmt->fetch();
+        } catch (\Exception $e) {
+            return null;
         }
-        return null;
     }
     
     private function getRoles()
     {
         return [
             ['id' => 'admin', 'name' => 'Administrateur'],
-            ['id' => 'user', 'name' => 'Utilisateur'],
-            ['id' => 'viewer', 'name' => 'Lecteur']
+            ['id' => 'manager', 'name' => 'Gestionnaire'],
+            ['id' => 'observer', 'name' => 'Observateur']
         ];
     }
     
     private function getOrganizations()
     {
-        return [
-            ['id' => 1, 'name' => 'TechCorp Inc.'],
-            ['id' => 2, 'name' => 'DataNet Solutions'],
-            ['id' => 3, 'name' => 'CloudTech Ltd.']
-        ];
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT id, name FROM organizations WHERE is_active = 1 ORDER BY name";
+            $stmt = $pdo->query($sql);
+            return $stmt->fetchAll();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
     
     private function getUserPermissions($userId)
@@ -181,20 +169,54 @@ class UserController extends BaseController
     
     private function createUser($data)
     {
-        // Simulation - à remplacer par une vraie insertion DB
-        return true;
+        try {
+            $pdo = getDbConnection();
+            $sql = "INSERT INTO users (username, email, full_name, role, organization_id, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([
+                $data['username'],
+                $data['email'],
+                $data['full_name'],
+                $data['role'],
+                $data['organization_id'],
+                $data['status'] ?? 'active'
+            ]);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     private function updateUser($id, $data)
     {
-        // Simulation - à remplacer par une vraie mise à jour DB
-        return true;
+        try {
+            $pdo = getDbConnection();
+            $sql = "UPDATE users SET username=?, email=?, full_name=?, role=?, organization_id=?, status=? WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([
+                $data['username'],
+                $data['email'],
+                $data['full_name'],
+                $data['role'],
+                $data['organization_id'],
+                $data['status'] ?? 'active',
+                $id
+            ]);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     private function deleteUser($id)
     {
-        // Simulation - à remplacer par une vraie suppression DB
-        return true;
+        try {
+            $pdo = getDbConnection();
+            $sql = "DELETE FROM users WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([$id]);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     private function updateUserPermissions($id, $data)

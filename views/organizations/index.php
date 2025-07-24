@@ -1,7 +1,7 @@
 <?php
-$pageTitle = 'Gestion des Organisations';
+$pageTitle = 'Organization Management';
 $breadcrumbs = [
-    ['url' => '/organizations', 'text' => 'Organisations', 'active' => true]
+    ['url' => '/organizations', 'text' => 'Organizations', 'active' => true]
 ];
 ?>
 
@@ -11,12 +11,12 @@ $breadcrumbs = [
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-building mr-1"></i>
-                    Liste des Organisations
+                    Organization List
                 </h3>
                 <div class="card-tools">
                     <a href="/organizations/add" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus mr-1"></i>
-                        Ajouter une organisation
+                        Add Organization
                     </a>
                 </div>
             </div>
@@ -26,12 +26,12 @@ $breadcrumbs = [
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Nom</th>
+                                <th>Name</th>
                                 <th>Type</th>
-                                <th>Email de contact</th>
-                                <th>Téléphone</th>
-                                <th>Adresse</th>
-                                <th>Date de création</th>
+                                <th>Contact Email</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Created Date</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -68,13 +68,13 @@ $breadcrumbs = [
                                 <td><?php echo date('d/m/Y', strtotime($org['created_at'])); ?></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-info" data-toggle="tooltip" title="Voir les détails">
+                                        <a href="/organizations/view?id=<?php echo $org['id']; ?>" class="btn btn-info" data-toggle="tooltip" title="View details">
                                             <i class="fas fa-eye"></i>
-                                        </button>
-                                        <a href="/organizations/edit?id=<?php echo $org['id']; ?>" class="btn btn-primary" data-toggle="tooltip" title="Modifier">
+                                        </a>
+                                        <a href="/organizations/edit?id=<?php echo $org['id']; ?>" class="btn btn-primary" data-toggle="tooltip" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="/organizations/delete?id=<?php echo $org['id']; ?>" class="btn btn-danger btn-delete" data-toggle="tooltip" title="Supprimer">
+                                        <a href="/organizations/delete?id=<?php echo $org['id']; ?>" class="btn btn-danger btn-delete" data-toggle="tooltip" title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
@@ -113,7 +113,7 @@ $breadcrumbs = [
         <div class="info-box">
             <span class="info-box-icon bg-success"><i class="fas fa-server"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Hébergeurs</span>
+                <span class="info-box-text">Hosting Providers</span>
                 <span class="info-box-number">
                     <?php 
                     $hostingCount = 0;
@@ -149,7 +149,7 @@ $breadcrumbs = [
         <div class="info-box">
             <span class="info-box-icon bg-warning"><i class="fas fa-building"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Entreprises</span>
+                <span class="info-box-text">Enterprises</span>
                 <span class="info-box-number">
                     <?php 
                     $enterpriseCount = 0;
@@ -171,7 +171,7 @@ $breadcrumbs = [
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-chart-pie mr-1"></i>
-                    Répartition par Type
+                    Distribution by Type
                 </h3>
             </div>
             <div class="card-body">
@@ -185,7 +185,7 @@ $breadcrumbs = [
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-chart-bar mr-1"></i>
-                    Organisations par Mois
+                    Organizations by Month
                 </h3>
             </div>
             <div class="card-body">
@@ -226,9 +226,9 @@ $(document).ready(function() {
     var orgTimelineChart = new Chart(orgTimelineCtx, {
         type: 'line',
         data: {
-            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
             datasets: [{
-                label: 'Nouvelles organisations',
+                label: 'New organizations',
                 data: [2, 3, 1, 4, 2, 3],
                 borderColor: '#007bff',
                 backgroundColor: 'rgba(0, 123, 255, 0.1)',

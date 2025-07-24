@@ -57,67 +57,91 @@ class OrganizationController extends BaseController
             echo "Erreur lors de la suppression";
         }
     }
+
+    public function view()
+    {
+        $id = $this->getQueryParam('id');
+        $organization = $this->getOrganization($id);
+        $this->render('organizations/view', ['organization' => $organization]);
+    }
     
     // Méthodes privées pour la gestion des données
     private function getAllOrganizations()
     {
-        return [
-            [
-                'id' => 1,
-                'name' => 'TechCorp Inc.',
-                'type' => 'ISP',
-                'contact_email' => 'admin@techcorp.com',
-                'contact_phone' => '+1-555-0123',
-                'address' => '123 Tech Street, Silicon Valley, CA',
-                'created_at' => '2024-01-10'
-            ],
-            [
-                'id' => 2,
-                'name' => 'DataNet Solutions',
-                'type' => 'Hosting Provider',
-                'contact_email' => 'info@datanet.com',
-                'contact_phone' => '+1-555-0456',
-                'address' => '456 Data Avenue, New York, NY',
-                'created_at' => '2024-01-15'
-            ],
-            [
-                'id' => 3,
-                'name' => 'CloudTech Ltd.',
-                'type' => 'Cloud Provider',
-                'contact_email' => 'support@cloudtech.com',
-                'contact_phone' => '+1-555-0789',
-                'address' => '789 Cloud Boulevard, Seattle, WA',
-                'created_at' => '2024-01-20'
-            ]
-        ];
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT * FROM organizations ORDER BY id";
+            $stmt = $pdo->query($sql);
+            return $stmt->fetchAll();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
     
     private function getOrganization($id)
     {
-        $organizations = $this->getAllOrganizations();
-        foreach ($organizations as $org) {
-            if ($org['id'] == $id) {
-                return $org;
-            }
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT * FROM organizations WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$id]);
+            return $stmt->fetch();
+        } catch (\Exception $e) {
+            return null;
         }
-        return null;
     }
     
     private function createOrganization($data)
     {
-        // Simulation - à remplacer par une vraie insertion DB
-        return true;
+        try {
+            $pdo = getDbConnection();
+            $sql = "INSERT INTO organizations (name, type, contact_email, contact_phone, address, description, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([
+                $data['name'],
+                $data['type'],
+                $data['contact_email'],
+                $data['contact_phone'],
+                $data['address'],
+                $data['description'] ?? '',
+                isset($data['is_active']) ? 1 : 0
+            ]);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     private function updateOrganization($id, $data)
     {
-        // Simulation - à remplacer par une vraie mise à jour DB
-        return true;
+        try {
+            $pdo = getDbConnection();
+            $sql = "UPDATE organizations SET name=?, type=?, contact_email=?, contact_phone=?, address=?, description=?, is_active=? WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([
+                $data['name'],
+                $data['type'],
+                $data['contact_email'],
+                $data['contact_phone'],
+                $data['address'],
+                $data['description'] ?? '',
+                isset($data['is_active']) ? 1 : 0,
+                $id
+            ]);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     private function deleteOrganization($id)
     {
-        // Simulation - à remplacer par une vraie suppression DB
-        return true;
+        try {
+            $pdo = getDbConnection();
+            $sql = "DELETE FROM organizations WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute([$id]);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 } 

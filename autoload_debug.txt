@@ -1,0 +1,12 @@
+Autoload inclus :
+C:\Users\LENOVO\Desktop\prj\index.php
+C:\Users\LENOVO\Desktop\prj\vendor\autoload.php
+C:\Users\LENOVO\Desktop\prj\vendor\composer\autoload_real.php
+C:\Users\LENOVO\Desktop\prj\vendor\composer\platform_check.php
+C:\Users\LENOVO\Desktop\prj\vendor\composer\ClassLoader.php
+C:\Users\LENOVO\Desktop\prj\vendor\composer\autoload_static.php
+C:\Users\LENOVO\Desktop\prj\vendor\phpseclib\phpseclib\phpseclib\bootstrap.php
+C:\Users\LENOVO\Desktop\prj\config.php
+C:\Users\LENOVO\Desktop\prj\app\Controllers\ServerController.php
+C:\Users\LENOVO\Desktop\prj\app\Controllers\BaseController.php
+SCP class NOT FOUND after autoload

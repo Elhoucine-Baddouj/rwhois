@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__FILE__) . '/vendor/autoload.php';
 session_start();
 
 // Charger la configuration
@@ -22,24 +23,25 @@ $routes = [
     '' => 'DashboardController@index',
     'dashboard' => 'DashboardController@index',
     'servers' => 'ServerController@index',
-    'servers/add' => 'ServerController@add',
-    'servers/edit' => 'ServerController@edit',
-    'servers/delete' => 'ServerController@delete',
+    'servers/status' => 'ServerController@status',
+    'servers/refreshStatus' => 'ServerController@refreshStatus',
+    'servers/control' => 'ServerController@control',
+    'servers/logs' => 'ServerController@logs',
+    'servers/info' => 'ServerController@info',
     'organizations' => 'OrganizationController@index',
     'organizations/add' => 'OrganizationController@add',
     'organizations/edit' => 'OrganizationController@edit',
     'organizations/delete' => 'OrganizationController@delete',
-    'resources' => 'ResourceController@index',
-    'resources/add' => 'ResourceController@add',
-    'resources/edit' => 'ResourceController@edit',
-    'resources/delete' => 'ResourceController@delete',
+    'organizations/view' => 'OrganizationController@view',
+
     'users' => 'UserController@index',
     'users/add' => 'UserController@add',
     'users/edit' => 'UserController@edit',
     'users/delete' => 'UserController@delete',
+    'users/view' => 'UserController@view',
     'api/servers' => 'ApiController@servers',
     'api/organizations' => 'ApiController@organizations',
-    'api/resources' => 'ApiController@resources',
+
     'api/users' => 'ApiController@users',
 ];
 

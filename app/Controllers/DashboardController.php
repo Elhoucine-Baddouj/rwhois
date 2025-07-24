@@ -10,7 +10,6 @@ class DashboardController extends BaseController
         $stats = [
             'servers' => $this->getServerCount(),
             'organizations' => $this->getOrganizationCount(),
-            'resources' => $this->getResourceCount(),
             'users' => $this->getUserCount()
         ];
         
@@ -26,41 +25,64 @@ class DashboardController extends BaseController
     
     private function getServerCount()
     {
-        // Simulation - à remplacer par une vraie requête DB
-        return 5;
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT COUNT(*) as count FROM servers WHERE status = 'active'";
+            $stmt = $pdo->query($sql);
+            $result = $stmt->fetch();
+            return $result['count'];
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
     
     private function getOrganizationCount()
     {
-        return 12;
-    }
-    
-    private function getResourceCount()
-    {
-        return 150;
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT COUNT(*) as count FROM organizations WHERE is_active = 1";
+            $stmt = $pdo->query($sql);
+            $result = $stmt->fetch();
+            return $result['count'];
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
     
     private function getUserCount()
     {
-        return 8;
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT COUNT(*) as count FROM users WHERE status = 'active'";
+            $stmt = $pdo->query($sql);
+            $result = $stmt->fetch();
+            return $result['count'];
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
     
     private function getRecentServers()
     {
-        // Simulation - à remplacer par une vraie requête DB
-        return [
-            ['id' => 1, 'name' => 'RWHOIS-Server-01', 'status' => 'active', 'ip' => '192.168.1.100'],
-            ['id' => 2, 'name' => 'RWHOIS-Server-02', 'status' => 'active', 'ip' => '192.168.1.101'],
-            ['id' => 3, 'name' => 'RWHOIS-Server-03', 'status' => 'inactive', 'ip' => '192.168.1.102']
-        ];
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT id, name, server_ip as ip, status FROM servers ORDER BY id DESC LIMIT 5";
+            $stmt = $pdo->query($sql);
+            return $stmt->fetchAll();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
     
     private function getRecentOrganizations()
     {
-        return [
-            ['id' => 1, 'name' => 'TechCorp Inc.', 'type' => 'ISP'],
-            ['id' => 2, 'name' => 'DataNet Solutions', 'type' => 'Hosting Provider'],
-            ['id' => 3, 'name' => 'CloudTech Ltd.', 'type' => 'Cloud Provider']
-        ];
+        try {
+            $pdo = getDbConnection();
+            $sql = "SELECT id, name, type FROM organizations WHERE is_active = 1 ORDER BY id DESC LIMIT 5";
+            $stmt = $pdo->query($sql);
+            return $stmt->fetchAll();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 } 
