@@ -20,6 +20,61 @@ if [ ! -f "$SSH_KEY" ]; then
     exit 2
 fi
 
+# VPS IPs
+LOCAL_IP="178.156.170.162"
+REMOTE_IP="178.156.185.53"
+
+# Mode d'exécution
+if [ "$SERVER_IP" = "$LOCAL_IP" ]; then
+    IS_LOCAL=1
+else
+    IS_LOCAL=0
+fi
+
+# Chemin de la clé SSH pour le serveur distant
+SSH_KEY="/var/www/.ssh/id_rsa"
+
+# Détection du dossier d'installation
+INSTALL_DIR=""
+CONFIG_DIR=""
+LOG_DIR=""
+if [ "$IS_LOCAL" -eq 1 ]; then
+    if [ -d /root/rwhoisd/rwhoisd ]; then
+        INSTALL_DIR="/root/rwhoisd/rwhoisd"
+        CONFIG_DIR="/root/rwhoisd/rwhoisd"
+        LOG_DIR="/root/rwhoisd/rwhoisd"
+    elif [ -d /opt/rwhoisd/rwhoisd ]; then
+        INSTALL_DIR="/opt/rwhoisd/rwhoisd"
+        CONFIG_DIR="/opt/rwhoisd/rwhoisd"
+        LOG_DIR="/opt/rwhoisd/rwhoisd"
+    else
+        error "No rwhoisd install dir found on local server!"
+        exit 1
+    fi
+else
+    if ssh -i "$SSH_KEY" root@"$SERVER_IP" "[ -d /root/rwhoisd/rwhoisd ]" 2>/dev/null; then
+        INSTALL_DIR="/root/rwhoisd/rwhoisd"
+        CONFIG_DIR="/root/rwhoisd/rwhoisd"
+        LOG_DIR="/root/rwhoisd/rwhoisd"
+    elif ssh -i "$SSH_KEY" root@"$SERVER_IP" "[ -d /opt/rwhoisd/rwhoisd ]" 2>/dev/null; then
+        INSTALL_DIR="/opt/rwhoisd/rwhoisd"
+        CONFIG_DIR="/opt/rwhoisd/rwhoisd"
+        LOG_DIR="/opt/rwhoisd/rwhoisd"
+    else
+        error "No rwhoisd install dir found on $SERVER_IP!"
+        exit 1
+    fi
+fi
+
+# Wrapper pour exécuter une commande localement ou à distance
+run_cmd() {
+    if [ "$IS_LOCAL" -eq 1 ]; then
+        bash -c "$1"
+    else
+        ssh -i "$SSH_KEY" root@"$SERVER_IP" "$1"
+    fi
+}
+
 # Couleurs pour les messages
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -72,206 +127,159 @@ log "Commande: $COMMAND"
 
 # Vérification de la connectivité via SSH (plus fiable que ping)
 log "Vérification de la connectivité vers $SERVER_IP..."
-if ! ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes root@"$SERVER_IP" "echo 'Connectivity OK'" > /dev/null 2>&1; then
-    error "Impossible de joindre $SERVER_IP via SSH"
-    exit 1
+if [ "$IS_LOCAL" -eq 0 ]; then
+    if ! ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes root@"$SERVER_IP" "echo 'Connectivity OK'" > /dev/null 2>&1; then
+        error "Impossible de joindre $SERVER_IP via SSH"
+        exit 1
+    fi
 fi
 
 # Vérification de l'accès SSH
 log "Test de la connexion SSH..."
-if ! ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes root@"$SERVER_IP" "echo 'SSH OK'" > /dev/null 2>&1; then
-    error "Impossible de se connecter en SSH à $SERVER_IP"
-    exit 1
+if [ "$IS_LOCAL" -eq 0 ]; then
+    if ! ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes root@"$SERVER_IP" "echo 'SSH OK'" > /dev/null 2>&1; then
+        error "Impossible de se connecter en SSH à $SERVER_IP"
+        exit 1
+    fi
+fi
+
+# Détection du dossier d'installation
+INSTALL_DIR=""
+CONFIG_DIR=""
+LOG_DIR=""
+if [ "$IS_LOCAL" -eq 1 ]; then
+    if [ -d /root/rwhoisd/rwhoisd ]; then
+        INSTALL_DIR="/root/rwhoisd/rwhoisd"
+        CONFIG_DIR="/root/rwhoisd/rwhoisd"
+        LOG_DIR="/root/rwhoisd/rwhoisd"
+    elif [ -d /opt/rwhoisd/rwhoisd ]; then
+        INSTALL_DIR="/opt/rwhoisd/rwhoisd"
+        CONFIG_DIR="/opt/rwhoisd/rwhoisd"
+        LOG_DIR="/opt/rwhoisd/rwhoisd"
+    else
+        error "No rwhoisd install dir found on local server!"
+        exit 1
+    fi
+else
+    if ssh -i "$SSH_KEY" root@"$SERVER_IP" "[ -d /root/rwhoisd/rwhoisd ]" 2>/dev/null; then
+        INSTALL_DIR="/root/rwhoisd/rwhoisd"
+        CONFIG_DIR="/root/rwhoisd/rwhoisd"
+        LOG_DIR="/root/rwhoisd/rwhoisd"
+    elif ssh -i "$SSH_KEY" root@"$SERVER_IP" "[ -d /opt/rwhoisd/rwhoisd ]" 2>/dev/null; then
+        INSTALL_DIR="/opt/rwhoisd/rwhoisd"
+        CONFIG_DIR="/opt/rwhoisd/rwhoisd"
+        LOG_DIR="/opt/rwhoisd/rwhoisd"
+    else
+        error "No rwhoisd install dir found on $SERVER_IP!"
+        exit 1
+    fi
 fi
 
 # Vérification de l'existence du dossier d'installation
 log "Vérification de l'existence du dossier d'installation sur $SERVER_IP..."
-if ! ssh -i "$SSH_KEY" root@"$SERVER_IP" "[ -d '$INSTALL_DIR' ]" 2>/dev/null; then
-    error "Le dossier d'installation $INSTALL_DIR n'existe pas sur $SERVER_IP"
-    exit 1
+if [ "$IS_LOCAL" -eq 0 ]; then
+    if ! ssh -i "$SSH_KEY" root@"$SERVER_IP" "[ -d '$INSTALL_DIR' ]" 2>/dev/null; then
+        error "Le dossier d'installation $INSTALL_DIR n'existe pas sur $SERVER_IP"
+        exit 1
+    fi
+else
+    if ! [ -d "$INSTALL_DIR" ]; then
+        error "Le dossier d'installation $INSTALL_DIR n'existe pas sur le serveur local"
+        exit 1
+    fi
 fi
 
 # Exécution des commandes
 case "$COMMAND" in
     "status")
         log "Vérification du statut du service $SERVICE_NAME..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            # Retourner un statut simple pour le contrôleur PHP
-            if systemctl is-active --quiet $SERVICE_NAME; then
-                echo "active"
-            else
-                echo "inactive"
-            fi
-EOF
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "systemctl is-active --quiet $SERVICE_NAME"
+        else
+            run_cmd "systemctl is-active --quiet $SERVICE_NAME"
+        fi
         ;;
     
     "start")
         log "Démarrage du service $SERVICE_NAME..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            systemctl start $SERVICE_NAME
-            if systemctl is-active --quiet $SERVICE_NAME; then
-                echo "Service $SERVICE_NAME démarré avec succès"
-            else
-                echo "Erreur lors du démarrage du service $SERVICE_NAME"
-                systemctl status $SERVICE_NAME --no-pager
-                exit 1
-            fi
-EOF
-        success "Service $SERVICE_NAME démarré"
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "systemctl start $SERVICE_NAME"
+        else
+            run_cmd "systemctl start $SERVICE_NAME"
+        fi
         ;;
     
     "stop")
         log "Arrêt du service $SERVICE_NAME..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            systemctl stop $SERVICE_NAME
-            if ! systemctl is-active --quiet $SERVICE_NAME; then
-                echo "Service $SERVICE_NAME arrêté avec succès"
-            else
-                echo "Erreur lors de l'arrêt du service $SERVICE_NAME"
-                systemctl status $SERVICE_NAME --no-pager
-                exit 1
-            fi
-EOF
-        success "Service $SERVICE_NAME arrêté"
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "systemctl stop $SERVICE_NAME"
+        else
+            run_cmd "systemctl stop $SERVICE_NAME"
+        fi
         ;;
     
     "restart")
         log "Redémarrage du service $SERVICE_NAME..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            systemctl restart $SERVICE_NAME
-            sleep 2
-            if systemctl is-active --quiet $SERVICE_NAME; then
-                echo "Service $SERVICE_NAME redémarré avec succès"
-            else
-                echo "Erreur lors du redémarrage du service $SERVICE_NAME"
-                systemctl status $SERVICE_NAME --no-pager
-                exit 1
-            fi
-EOF
-        success "Service $SERVICE_NAME redémarré"
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "systemctl restart $SERVICE_NAME"
+        else
+            run_cmd "systemctl restart $SERVICE_NAME"
+        fi
         ;;
     
     "reload")
         log "Rechargement de la configuration..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            # Rechargement de la configuration systemd
-            systemctl daemon-reload
-            
-            # Redémarrage du service pour appliquer les changements
-            systemctl restart $SERVICE_NAME
-            
-            if systemctl is-active --quiet $SERVICE_NAME; then
-                echo "Configuration rechargée avec succès"
-            else
-                echo "Erreur lors du rechargement de la configuration"
-                systemctl status $SERVICE_NAME --no-pager
-                exit 1
-            fi
-EOF
-        success "Configuration rechargée"
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "systemctl daemon-reload"
+            run_cmd "systemctl restart $SERVICE_NAME"
+        else
+            run_cmd "systemctl daemon-reload"
+            run_cmd "systemctl restart $SERVICE_NAME"
+        fi
         ;;
     
     "logs")
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" 'journalctl -u rwhoisd --no-pager -n 20'
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "journalctl -u rwhoisd --no-pager -n 20"
+        else
+            run_cmd "journalctl -u rwhoisd --no-pager -n 20"
+        fi
         ;;
     
     "config")
         log "Affichage de la configuration..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            echo "=== Configuration RWHOIS Instance $INSTANCE_ID ==="
-            echo "Fichier: $CONFIG_DIR/rwhois.conf"
-            echo ""
-            if [ -f "$CONFIG_DIR/rwhois.conf" ]; then
-                cat "$CONFIG_DIR/rwhois.conf"
-            else
-                echo "Fichier de configuration non trouvé"
-            fi
-EOF
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "echo \"=== Configuration RWHOIS Instance $INSTANCE_ID ===\" && echo \"Fichier: $CONFIG_DIR/rwhois.conf\" && echo \"\" && if [ -f \"$CONFIG_DIR/rwhois.conf\" ]; then cat \"$CONFIG_DIR/rwhois.conf\" else echo \"Fichier de configuration non trouvé\" fi"
+        else
+            run_cmd "echo \"=== Configuration RWHOIS Instance $INSTANCE_ID ===\" && echo \"Fichier: $CONFIG_DIR/rwhois.conf\" && echo \"\" && if [ -f \"$CONFIG_DIR/rwhois.conf\" ]; then cat \"$CONFIG_DIR/rwhois.conf\" else echo \"Fichier de configuration non trouvé\" fi"
+        fi
         ;;
     
     "test")
         log "Test de la connexion RWHOIS..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            # Récupération du port
-            PORT=\$(grep "listen.*:" $CONFIG_DIR/rwhois.conf | grep -o '[0-9]\+' | head -1)
-            
-            if [ ! -z "\$PORT" ]; then
-                echo "Test de connexion sur le port \$PORT..."
-                
-                # Test local
-                if timeout 5 bash -c "</dev/tcp/localhost/\$PORT" 2>/dev/null; then
-                    echo "✓ Connexion locale réussie"
-                else
-                    echo "✗ Échec de la connexion locale"
-                fi
-                
-                # Test avec telnet
-                if command -v telnet &> /dev/null; then
-                    echo "Test avec telnet..."
-                    timeout 5 telnet localhost \$PORT 2>/dev/null || echo "Échec du test telnet"
-                fi
-                
-                # Test avec nc (netcat)
-                if command -v nc &> /dev/null; then
-                    echo "Test avec netcat..."
-                    timeout 5 nc -zv localhost \$PORT 2>/dev/null || echo "Échec du test netcat"
-                fi
-            else
-                echo "Impossible de déterminer le port de configuration"
-            fi
-EOF
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "PORT=\$(grep \"listen.*:\" $CONFIG_DIR/rwhois.conf | grep -o '[0-9]\+' | head -1) && if [ ! -z \"\$PORT\" ]; then echo \"Test de connexion sur le port \$PORT...\" && if timeout 5 bash -c \"</dev/tcp/localhost/\$PORT\" 2>/dev/null; then echo \"✓ Connexion locale réussie\" else echo \"✗ Échec de la connexion locale\" fi && if command -v telnet &> /dev/null; then echo \"Test avec telnet...\" && timeout 5 telnet localhost \$PORT 2>/dev/null || echo \"Échec du test telnet\" fi && if command -v nc &> /dev/null; then echo \"Test avec netcat...\" && timeout 5 nc -zv localhost \$PORT 2>/dev/null || echo \"Échec du test netcat\" fi fi"
+        else
+            run_cmd "PORT=\$(grep \"listen.*:\" $CONFIG_DIR/rwhois.conf | grep -o '[0-9]\+' | head -1) && if [ ! -z \"\$PORT\" ]; then echo \"Test de connexion sur le port \$PORT...\" && if timeout 5 bash -c \"</dev/tcp/localhost/\$PORT\" 2>/dev/null; then echo \"✓ Connexion locale réussie\" else echo \"✗ Échec de la connexion locale\" fi && if command -v telnet &> /dev/null; then echo \"Test avec telnet...\" && timeout 5 telnet localhost \$PORT 2>/dev/null || echo \"Échec du test telnet\" fi && if command -v nc &> /dev/null; then echo \"Test avec netcat...\" && timeout 5 nc -zv localhost \$PORT 2>/dev/null || echo \"Échec du test netcat\" fi fi"
+        fi
         ;;
     
     "info")
         log "Informations sur l'instance $INSTANCE_ID..."
-        ssh -i "$SSH_KEY" root@"$SERVER_IP" << EOF
-            echo "=== Informations Instance $INSTANCE_ID ==="
-            echo "Serveur: $SERVER_IP"
-            echo "Instance ID: $INSTANCE_ID"
-            echo "Service: $SERVICE_NAME"
-            echo "Répertoire d'installation: $INSTALL_DIR"
-            echo "Répertoire de configuration: $CONFIG_DIR"
-            echo "Répertoire des logs: $LOG_DIR"
-            echo ""
-            
-            # Statut du service
-            echo "=== Statut du service ==="
-            if systemctl is-active --quiet $SERVICE_NAME; then
-                echo "Service: Actif"
-            else
-                echo "Service: Inactif"
-            fi
-            
-            # Port utilisé
-            PORT=\$(grep "listen.*:" $CONFIG_DIR/rwhois.conf | grep -o '[0-9]\+' | head -1)
-            if [ ! -z "\$PORT" ]; then
-                echo "Port configuré: \$PORT"
-                if netstat -tlnp | grep -q ":\$PORT "; then
-                    echo "Port: Ouvert"
-                else
-                    echo "Port: Fermé"
-                fi
-            fi
-            
-            # Taille des logs
-            echo ""
-            echo "=== Taille des logs ==="
-            if [ -f "$LOG_DIR/rwhois.log" ]; then
-                ls -lh "$LOG_DIR/rwhois.log"
-            else
-                echo "Fichier de log non trouvé"
-            fi
-            
-            # Utilisation disque
-            echo ""
-            echo "=== Utilisation disque ==="
-            du -sh $INSTALL_DIR $CONFIG_DIR $LOG_DIR 2>/dev/null || echo "Impossible de calculer l'utilisation disque"
-EOF
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            run_cmd "echo \"=== Informations Instance $INSTANCE_ID ===\" && echo \"Serveur: $SERVER_IP\" && echo \"Instance ID: $INSTANCE_ID\" && echo \"Service: $SERVICE_NAME\" && echo \"Répertoire d'installation: $INSTALL_DIR\" && echo \"Répertoire de configuration: $CONFIG_DIR\" && echo \"Répertoire des logs: $LOG_DIR\" && echo \"\" && echo \"=== Statut du service ===\" && if systemctl is-active --quiet $SERVICE_NAME; then echo \"Service: Actif\" else echo \"Service: Inactif\" fi && PORT=\$(grep \"listen.*:\" $CONFIG_DIR/rwhois.conf | grep -o '[0-9]\+' | head -1) && if [ ! -z \"\$PORT\" ]; then echo \"Port configuré: \$PORT\" && if netstat -tlnp | grep -q \":\$PORT \"; then echo \"Port: Ouvert\" else echo \"Port: Fermé\" fi fi && echo \"\" && echo \"=== Taille des logs ===\" && if [ -f \"$LOG_DIR/rwhois.log\" ]; then ls -lh \"$LOG_DIR/rwhois.log\" else echo \"Fichier de log non trouvé\" fi && echo \"\" && echo \"=== Utilisation disque ===\" && du -sh $INSTALL_DIR $CONFIG_DIR $LOG_DIR 2>/dev/null || echo \"Impossible de calculer l'utilisation disque\""
+        else
+            run_cmd "echo \"=== Informations Instance $INSTANCE_ID ===\" && echo \"Serveur: $SERVER_IP\" && echo \"Instance ID: $INSTANCE_ID\" && echo \"Service: $SERVICE_NAME\" && echo \"Répertoire d'installation: $INSTALL_DIR\" && echo \"Répertoire de configuration: $CONFIG_DIR\" && echo \"Répertoire des logs: $LOG_DIR\" && echo \"\" && echo \"=== Statut du service ===\" && if systemctl is-active --quiet $SERVICE_NAME; then echo \"Service: Actif\" else echo \"Service: Inactif\" fi && PORT=\$(grep \"listen.*:\" $CONFIG_DIR/rwhois.conf | grep -o '[0-9]\+' | head -1) && if [ ! -z \"\$PORT\" ]; then echo \"Port configuré: \$PORT\" && if netstat -tlnp | grep -q \":\$PORT \"; then echo \"Port: Ouvert\" else echo \"Port: Fermé\" fi fi && echo \"\" && echo \"=== Taille des logs ===\" && if [ -f \"$LOG_DIR/rwhois.log\" ]; then ls -lh \"$LOG_DIR/rwhois.log\" else echo \"Fichier de log non trouvé\" fi && echo \"\" && echo \"=== Utilisation disque ===\" && du -sh $INSTALL_DIR $CONFIG_DIR $LOG_DIR 2>/dev/null || echo \"Impossible de calculer l'utilisation disque\""
+        fi
         ;;
     
     "update")
         echo "Mise à jour du système en cours..."
-        apt update && apt upgrade -y
+        if [ "$IS_LOCAL" -eq 0 ]; then
+            apt update && apt upgrade -y
+        else
+            apt update && apt upgrade -y
+        fi
         if [ $? -eq 0 ]; then
             echo "Mise à jour terminée avec succès."
         else

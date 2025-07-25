@@ -1,6 +1,6 @@
 # Configuration files with sensitive data
-config.php
-php.ini
+!
+!php.ini
 
 # Logs
 logs/
@@ -25,9 +25,9 @@ Thumbs.db
 *.key
 id_*
 
-# Database files
-*.sql
-*.db
+# Autoriser explicitement config.php
+!config.php
+
 
 # Test files
 test.php

@@ -41,6 +41,9 @@
         <!-- Right navbar links -->
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
+                <a href="/logout" class="btn btn-danger btn-sm" style="margin-top: 8px;">Logout</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" data-widget="fullscreen" href="#" role="button">
                     <i class="fas fa-expand-arrows-alt"></i>
                 </a>
@@ -80,11 +83,16 @@
                             <p>Organizations</p>
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a href="/users" class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], 'users') !== false ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Users</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/network_resources" class="nav-link <?php echo strpos($_SERVER['REQUEST_URI'], 'network_resources') !== false ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-network-wired"></i>
+                            <p>Network Resources</p>
                         </a>
                     </li>
                     <li class="nav-header">API</li>
@@ -249,6 +257,58 @@ $(document).ready(function() {
             alert('Error during server action.');
             btn.prop('disabled', false).html(action === 'stop' ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>');
         });
+    });
+
+    // Handler pour le bouton Update (depuis servers/index.php)
+    console.log('Handler .btn-update-server chargé');
+    $('.btn-update-server').click(function() {
+        var button = $(this);
+        var icon = button.find('i');
+        var originalIcon = icon.attr('class');
+        button.prop('disabled', true);
+        icon.removeClass().addClass('fas fa-spinner fa-spin');
+        // Appel AJAX
+        $.get('/servers/control', {id: button.data('id'), action: 'update'})
+            .done(function(response) {
+                if (response.success) {
+                    alert('Mise à jour du serveur terminée avec succès');
+                } else {
+                    alert('Erreur lors de la mise à jour du serveur');
+                }
+            })
+            .fail(function() {
+                alert('Erreur de communication avec le serveur');
+            })
+            .always(function() {
+                button.prop('disabled', false);
+                icon.removeClass().addClass(originalIcon);
+            });
+    });
+
+    // Handler pour le bouton Supprimer serveur
+    $('.btn-delete-server').click(function() {
+        var button = $(this);
+        var serverId = button.data('id');
+        if (!confirm('Voulez-vous vraiment supprimer ce serveur ? Cette action est irréversible.')) {
+            return;
+        }
+        button.prop('disabled', true);
+        $.post('/servers/delete', {id: serverId})
+            .done(function(response) {
+                if (response.success) {
+                    // Supprimer la ligne du tableau
+                    button.closest('tr').remove();
+                    alert('Serveur supprimé avec succès !');
+                } else {
+                    alert('Erreur lors de la suppression du serveur : ' + (response.error || '')); 
+                }
+            })
+            .fail(function() {
+                alert('Erreur de communication avec le serveur');
+            })
+            .always(function() {
+                button.prop('disabled', false);
+            });
     });
 
     // Fonction pour afficher les informations du serveur

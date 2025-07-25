@@ -97,6 +97,9 @@ $breadcrumbs = [
                                             <i class="fas fa-info"></i>
                                         </button>
                                         
+                                        <a href="/servers/edit?id=<?php echo $server['id']; ?>" class="btn btn-warning btn-sm" title="Edit" style="background-color: #fd7e14; border-color: #fd7e14; color: #fff;">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
 
                                         
                                         <!-- Boutons de contrôle -->
@@ -114,9 +117,13 @@ $breadcrumbs = [
                                         <button type="button" class="btn btn-info btn-sm" data-toggle="tooltip" title="View logs" onclick="showServerLogs(<?php echo $server['id']; ?>)">
                                             <i class="fas fa-file-alt"></i>
                                         </button>
-                                        <!-- Bouton de mise à jour -->
-                                        <button type="button" class="btn btn-primary btn-sm btn-update" data-id="<?php echo $server['id']; ?>" data-toggle="tooltip" title="Update server">
+                                        <!-- Bouton de mise à jour (nouvelle version) -->
+                                        <button type="button" class="btn btn-primary btn-sm btn-update-server" data-id="<?php echo $server['id']; ?>" data-toggle="tooltip" title="Update server">
                                             <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        <!-- Bouton de suppression -->
+                                        <button type="button" class="btn btn-danger btn-sm btn-delete-server" data-id="<?php echo $server['id']; ?>" data-toggle="tooltip" title="Supprimer le serveur">
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -237,6 +244,7 @@ $breadcrumbs = [
 </div>
 
 <script>
+console.log('JS dashboard chargé');
 $(document).ready(function() {
     console.log('Update handler attached');
     // Initialisation des tooltips
@@ -360,9 +368,29 @@ $(document).ready(function() {
             });
     });
 
-    // Gestion du bouton Update (version directe)
-    $('.btn-update').click(function() {
-        alert('Succès !');
+    // Nouveau code pour le bouton Update
+    $('.btn-update-server').click(function() {
+        var button = $(this);
+        var icon = button.find('i');
+        var originalIcon = icon.attr('class');
+        button.prop('disabled', true);
+        icon.removeClass().addClass('fas fa-spinner fa-spin');
+        // Appel AJAX
+        $.get('/servers/control', {id: button.data('id'), action: 'update'})
+            .done(function(response) {
+                if (response.success) {
+                    alert('Mise à jour du serveur terminée avec succès');
+                } else {
+                    alert('Erreur lors de la mise à jour du serveur');
+                }
+            })
+            .fail(function() {
+                alert('Erreur de communication avec le serveur');
+            })
+            .always(function() {
+                button.prop('disabled', false);
+                icon.removeClass().addClass(originalIcon);
+            });
     });
     
 

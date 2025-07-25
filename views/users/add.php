@@ -29,6 +29,10 @@ $breadcrumbs = [
                     <input type="text" class="form-control" id="full_name" name="full_name" required>
                 </div>
                 <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" class="form-control" required>
+                </div>
+                <div class="form-group">
                     <label for="role">Role</label>
                     <select class="form-control" id="role" name="role" required>
                         <?php foreach ($roles as $role): ?>

@@ -71,6 +71,64 @@ class ServerController extends BaseController
         exit;
     }
     
+    public function edit()
+    {
+        $id = $_GET['id'] ?? null;
+        $pdo = getDbConnection();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $sql = "UPDATE servers SET name=?, organization_id=?, environment=?, description=? WHERE id=?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                $_POST['name'],
+                $_POST['organization_id'],
+                $_POST['environment'],
+                $_POST['description'],
+                $id
+            ]);
+            header('Location: /servers');
+            exit;
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM servers WHERE id=?");
+            $stmt->execute([$id]);
+            $server = $stmt->fetch();
+            $organizations = $pdo->query("SELECT * FROM organizations")->fetchAll();
+            include __DIR__ . '/../../views/servers/edit.php';
+        }
+    }
+    
+    public function delete()
+    {
+        $id = $_POST['id'] ?? null;
+        if (!$id) {
+            $this->json(['success' => false, 'error' => 'ID manquant']);
+            return;
+        }
+        $server = $this->getServer($id);
+        if (!$server) {
+            $this->json(['success' => false, 'error' => 'Serveur introuvable']);
+            return;
+        }
+        // Suppression distante sur le VPS
+        $scriptPath = BASE_PATH . '/scripts/rwhois-remote-control.sh';
+        $command = sprintf('%s %s %d delete', $scriptPath, $server['server_ip'], $server['instance_id']);
+        $output = [];
+        $returnCode = 0;
+        exec($command . ' 2>&1', $output, $returnCode);
+        if ($returnCode !== 0) {
+            $this->json(['success' => false, 'error' => "Erreur suppression VPS: " . implode("\n", $output)]);
+            return;
+        }
+        // Suppression en base de données
+        try {
+            $pdo = getDbConnection();
+            $stmt = $pdo->prepare('DELETE FROM servers WHERE id = ?');
+            $stmt->execute([$id]);
+            $this->json(['success' => true]);
+        } catch (\Exception $e) {
+            $this->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+    
     // Méthodes privées pour la gestion des données
     private function getAllServers()
     {

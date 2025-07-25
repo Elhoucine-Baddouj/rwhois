@@ -171,13 +171,15 @@ class UserController extends BaseController
     {
         try {
             $pdo = getDbConnection();
-            $sql = "INSERT INTO users (username, email, full_name, role, organization_id, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+            $sql = "INSERT INTO users (username, email, full_name, password, role, organization_id, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
             $stmt = $pdo->prepare($sql);
             return $stmt->execute([
                 $data['username'],
                 $data['email'],
                 $data['full_name'],
+                $hashedPassword,
                 $data['role'],
                 $data['organization_id'],
                 $data['status'] ?? 'active'

@@ -163,11 +163,11 @@ function getServerStatuses() {
 }
 
 function getDbConnection() {
-    $host = 'localhost';
-    $dbname = 'rwhois';
-    $user = 'root';
-    $pass = 'root';
-    $charset = 'utf8mb4';
+    $host = DB_HOST;
+    $dbname = DB_NAME;
+    $user = DB_USER;
+    $pass = DB_PASS;
+    $charset = DB_CHARSET;
     $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
     try {
         $pdo = new PDO($dsn, $user, $pass, [
