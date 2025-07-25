@@ -14,7 +14,7 @@ CONFIG_DIR="/root/rwhoisd/rwhoisd"
 LOG_DIR="/root/rwhoisd/rwhoisd"
 SERVICE_NAME="rwhoisd"
 # Chemin de la clé SSH à ADAPTER selon votre environnement
-SSH_KEY="C:/users/LENOVO/.ssh/id_ed25519"
+SSH_KEY="/var/www/.ssh/id_rsa"
 if [ ! -f "$SSH_KEY" ]; then
     echo -e "${RED}[ERREUR]${NC} Clé SSH non trouvée à l'emplacement $SSH_KEY. Modifiez SSH_KEY dans ce script pour pointer vers votre clé privée valide." >&2
     exit 2
